@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#include <math.h>
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+
 #define BLOCKSIZE 256
 
 
@@ -35,6 +39,9 @@ int main(void) {
   printf("Width of P: ");
   scanf("%d", &size);
 
+   const float alpha = 1.0f;
+   const float beta  = 0.0f;
+
   float *x, *y, *z, *M, *N, *P;
 
   x = (float*)malloc(sizeof(float) * size * size);
@@ -61,8 +68,9 @@ int main(void) {
   printf("numthreads %d, numblocks %d \n", numThreads, numBlocks);
 
   double t0 = get_clock();
-  MatrixMulOnDevice<<<numBlocks, BLOCKSIZE>>>(M, N, P, size);
-  
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, size, size, size, &alpha, N, size, M, size, &beta, P, size);
   cudaMemcpy(z, P, sizeof(float)*size*size, cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
   double t1 = get_clock();
